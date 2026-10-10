@@ -7,7 +7,7 @@ import type {
 	OAuthMetadata, OAuthProtectedResourceMetadata, OAuthClientInformationFull, OAuthClientMetadata,
 } from '@modelcontextprotocol/sdk/shared/auth.js';
 import {isTokenValid} from './utils/token-cache.js';
-import {isAllowedRedirectUri, parseAllowedRedirects} from './utils/redirect.js';
+import {isAllowedRedirectUri, parseList} from './utils/redirect.js';
 
 // Google OAuth configuration - users must provide their own credentials
 const {GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET} = process.env;
@@ -73,7 +73,12 @@ const transport = process.env.MCP_TRANSPORT || 'stdio';
 		const port = parseInt(process.env.PORT || '3000', 10);
 		const host = process.env.HOST || '127.0.0.1';
 		const baseUrl = process.env.MCP_BASE_URL || `http://localhost:${port}`;
-		const extraRedirects = parseAllowedRedirects(process.env.MCP_ALLOWED_REDIRECT_URIS);
+		const extraRedirects = parseList(process.env.MCP_ALLOWED_REDIRECT_URIS);
+		// Without these, any valid Google token works, making a public instance an open Gmail relay.
+		const tokenPolicy = {
+			audience: GOOGLE_CLIENT_ID,
+			allowedEmails: parseList(process.env.MCP_ALLOWED_EMAILS).map((e) => e.toLowerCase()),
+		};
 
 		// OAuth Authorization Server Metadata (RFC 8414)
 		// We act as the authorization server, proxying to Google
@@ -228,7 +233,7 @@ const transport = process.env.MCP_TRANSPORT || 'stdio';
 			}
 
 			// Validate token before processing
-			if (token && !await isTokenValid(token)) {
+			if (token && !await isTokenValid(token, tokenPolicy)) {
 				res.status(401).json({
 					jsonrpc: '2.0',
 					error: {code: -32001, message: 'Unauthorized: Invalid or expired token'},

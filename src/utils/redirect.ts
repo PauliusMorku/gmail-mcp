@@ -20,6 +20,6 @@ export function isAllowedRedirectUri(uri: string, extra: string[] = []): boolean
 	return [...DEFAULT_REMOTE_REDIRECTS, ...extra].includes(uri);
 }
 
-export function parseAllowedRedirects(value: string | undefined): string[] {
+export function parseList(value: string | undefined): string[] {
 	return (value ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 }
