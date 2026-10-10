@@ -43,7 +43,27 @@ function tokenCacheGet(token: string): number | undefined {
 	return expiresAt;
 }
 
-export async function isTokenValid(token: string): Promise<boolean> {
+export type TokenPolicy = {
+	/** OAuth client id the token must be issued to. */
+	audience?: string;
+	/** Lower-case mailbox addresses allowed to use the server; empty means any. */
+	allowedEmails?: string[];
+};
+
+// tokeninfo has no email without the email scope, so ask Gmail which mailbox this is.
+async function mailboxOf(token: string): Promise<string | undefined> {
+	const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+		headers: {Authorization: `Bearer ${token}`},
+	});
+	if (!response.ok) {
+		return undefined;
+	}
+
+	const data = await response.json() as {emailAddress?: string};
+	return data.emailAddress?.toLowerCase();
+}
+
+export async function isTokenValid(token: string, policy: TokenPolicy = {}): Promise<boolean> {
 	const cachedExpiresAt = tokenCacheGet(token);
 	if (cachedExpiresAt !== undefined) {
 		// Cache hit - check if token is still valid
@@ -59,7 +79,14 @@ export async function isTokenValid(token: string): Promise<boolean> {
 			return false;
 		}
 
-		const data = await response.json() as {expires_in?: number};
+		const data = await response.json() as {expires_in?: number; aud?: string; azp?: string};
+		const wrongAudience = policy.audience !== undefined && data.aud !== policy.audience && data.azp !== policy.audience;
+		const wrongMailbox = Boolean(policy.allowedEmails?.length) && !policy.allowedEmails!.includes(await mailboxOf(token) ?? '');
+		if (wrongAudience || wrongMailbox) {
+			tokenCacheSet(token, Date.now() - TOKEN_CACHE_EXPIRED_BUFFER_MS);
+			return false;
+		}
+
 		const expiresIn = data.expires_in ?? 0;
 		const expiresAt = Date.now() + (expiresIn * 1000);
 		tokenCacheSet(token, expiresAt);

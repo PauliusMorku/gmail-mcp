@@ -1,5 +1,5 @@
 import {describe, expect, test} from 'vitest';
-import {isAllowedRedirectUri, parseAllowedRedirects} from './redirect.js';
+import {isAllowedRedirectUri, parseList} from './redirect.js';
 
 describe('isAllowedRedirectUri', () => {
 	test.each([
@@ -31,7 +31,7 @@ describe('isAllowedRedirectUri', () => {
 	});
 });
 
-test('parseAllowedRedirects', () => {
-	expect(parseAllowedRedirects(' https://a/cb , ,https://b/cb')).toEqual(['https://a/cb', 'https://b/cb']);
-	expect(parseAllowedRedirects(undefined)).toEqual([]);
+test('parseList', () => {
+	expect(parseList(' https://a/cb , ,https://b/cb')).toEqual(['https://a/cb', 'https://b/cb']);
+	expect(parseList(undefined)).toEqual([]);
 });

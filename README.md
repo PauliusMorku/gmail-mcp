@@ -42,7 +42,7 @@ npm start
 
 The server runs on `http://localhost:3000` by default. Change with `PORT=3001`.
 
-It listens on `127.0.0.1` only; set `HOST=0.0.0.0` to expose it (e.g. in Docker). OAuth redirects are limited to loopback URLs and `https://claude.ai/api/mcp/auth_callback`; allow more with `MCP_ALLOWED_REDIRECT_URIS` (comma-separated, exact match).
+It listens on `127.0.0.1` only; set `HOST=0.0.0.0` to expose it (e.g. in Docker). OAuth redirects are limited to loopback URLs and `https://claude.ai/api/mcp/auth_callback`; allow more with `MCP_ALLOWED_REDIRECT_URIS` (comma-separated, exact match). Only tokens issued to your `GOOGLE_CLIENT_ID` are accepted; set `MCP_ALLOWED_EMAILS` (comma-separated) to also restrict which mailboxes may use the server, which you should do before exposing it publicly.
 
 ### 3. Add to your MCP client
 
